@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f0e8">
+  <title>GitStock User V6 - Android Live App</title>
+  <style>
+    :root {
+      --paper: #f4f0e8;
+      --paper-2: #ebe5da;
+      --ink: #141414;
+      --muted: #6d6a63;
+      --line: #cbc4b8;
+      --card: rgba(255, 255, 255, 0.48);
+      --green: #16a16f;
+      --red: #df5b55;
+      --amber: #d99b2b;
+      --shadow: 0 16px 48px rgba(37, 31, 24, 0.10);
+      --radius: 18px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.85), transparent 34rem),
+        linear-gradient(180deg, var(--paper) 0%, #f1ece3 100%);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button,
+    a,
+    input,
+    select {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button {
+      color: inherit;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .site-header {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid rgba(20, 20, 20, 0.12);
+    }
+
+    .brand {
+      border: 0;
+      padding: 8px 0;
+      background: transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .brand-mark {
+      width: 25px;
+      height: 25px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-button,
+    .quiet-button,
+    .tool-button,
+    .range-button,
+    .chip,
+    .primary-button,
+    .secondary-button {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.42);
+      border-radius: 999px;
+      min-height: 40px;
+      padding: 0 15px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: transform 120ms ease, background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .icon-button {
+      width: 42px;
+      padding: 0;
+    }
+
+    .quiet-button:hover,
+    .tool-button:hover,
+    .range-button:hover,
+    .chip:hover,
+    .secondary-button:hover,
+    .icon-button:hover {
+      background: rgba(255, 255, 255, 0.76);
+      border-color: #a9a197;
+    }
+
+    button:active,
+    .quiet-button:active,
+    .tool-button:active,
+    .range-button:active,
+    .chip:active,
+    .primary-button:active,
+    .secondary-button:active,
+    .icon-button:active {
+      transform: translateY(1px) scale(0.99);
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    a:focus-visible {
+      outline: 3px solid rgba(20, 20, 20, 0.20);
+      outline-offset: 2px;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+    }
+
+    .primary-button {
+      background: var(--ink);
+      color: white;
+      border-color: var(--ink);
+      font-weight: 760;
+      min-height: 50px;
+      padding: 0 22px;
+    }
+
+    .primary-button:hover {
+      background: #2b2b2b;
+    }
+
+    .secondary-button {
+      font-weight: 700;
+    }
+
+    .view {
+      display: none;
+      flex: 1;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .home-view.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hero {
+      width: min(960px, calc(100% - 32px));
+      margin: auto;
+      padding: 84px 0 64px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 760;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+    }
+
+    .signal-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 5px rgba(22, 161, 111, 0.12);
+    }
+
+    .hero h1 {
+      max-width: 850px;
+      margin: 0 auto;
+      font-size: clamp(44px, 8vw, 86px);
+      line-height: 0.98;
+      letter-spacing: -0.065em;
+      font-weight: 850;
+    }
+
+    .hero-copy {
+      max-width: 690px;
+      margin: 26px auto 32px;
+      color: var(--muted);
+      font-size: clamp(16px, 2vw, 20px);
+      line-height: 1.55;
+    }
+
+    .search-panel {
+      width: min(780px, 100%);
+      margin: 0 auto;
+      padding: 9px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      border: 1px solid rgba(20, 20, 20, 0.18);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.68);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .username-field {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      min-height: 52px;
+      border-radius: 15px;
+      background: rgba(244, 240, 232, 0.72);
+      border: 1px solid rgba(20, 20, 20, 0.08);
+      overflow: hidden;
+    }
+
+    .username-prefix {
+      padding-left: 16px;
+      color: var(--muted);
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .username-field input {
+      width: 100%;
+      min-width: 80px;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      padding: 0 14px 0 2px;
+      color: var(--ink);
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .example-label {
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .example-chips {
+      margin-top: 12px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      min-height: 36px;
+      padding: 0 13px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .site-footer {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 calc(24px + var(--safe-bottom));
+      border-top: 1px solid rgba(20, 20, 20, 0.12);
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .result-view {
+      padding-bottom: calc(32px + var(--safe-bottom));
+    }
+
+    .result-main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding-top: 32px;
+    }
+
+    .profile-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .profile-identity {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 1px solid rgba(20, 20, 20, 0.15);
+      background: var(--paper-2);
+      object-fit: cover;
+      flex: 0 0 auto;
+    }
+
+    .profile-copy {
+      min-width: 0;
+    }
+
+    .profile-copy h1 {
+      margin: 0;
+      font-size: clamp(28px, 5vw, 46px);
+      line-height: 1;
+      letter-spacing: -0.045em;
+      overflow-wrap: anywhere;
+    }
+
+    .profile-meta {
+      margin-top: 7px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .profile-description {
+      max-width: 650px;
+      margin-top: 8px;
+      color: #45423d;
+      line-height: 1.5;
+    }
+
+    .re
