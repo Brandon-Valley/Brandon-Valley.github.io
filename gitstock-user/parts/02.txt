@@ -1,0 +1,381 @@
+"tool-button" id="copyImageUrlButton" type="button">Copy image URL</button>
+          </div>
+        </div>
+
+        <section class="chart-card" id="chartCard" aria-label="GitHub activity chart">
+          <canvas id="chartCanvas"></canvas>
+          <div class="chart-caption" aria-hidden="true">
+            <span class="chart-caption-title" id="chartCaptionTitle">Lines changed</span>
+            <span class="chart-legend" id="chartLegend"></span>
+          </div>
+          <div class="chart-watermark" id="chartWatermark">GitStock User</div>
+          <div class="chart-tooltip" id="chartTooltip" role="status" aria-live="polite"></div>
+        </section>
+
+        <div class="status-strip">
+          <div class="status-left">
+            <span class="status-pill"><span class="status-bullet"></span><span id="statusSummary">Ready</span></span>
+          </div>
+          <div class="status-right" id="statusNotice"></div>
+        </div>
+
+        <div class="dashboard-grid">
+          <section class="panel">
+            <div class="metrics-grid">
+              <div class="metric">
+                <div class="metric-value" id="metricCommits">0</div>
+                <div class="metric-label">Commits in selected range</div>
+              </div>
+              <div class="metric">
+                <div class="metric-value" id="metricRepos">0</div>
+                <div class="metric-label">Repositories in selected range</div>
+              </div>
+              <div class="metric">
+                <div class="metric-value" id="metricAdditions">-</div>
+                <div class="metric-label" id="metricAdditionsLabel">Lines added</div>
+              </div>
+              <div class="metric">
+                <div class="metric-value" id="metricDeletions">-</div>
+                <div class="metric-label" id="metricDeletionsLabel">Lines removed</div>
+              </div>
+              <div class="metric">
+                <div class="metric-value" id="metricActiveDays">0</div>
+                <div class="metric-label">Active days</div>
+              </div>
+              <div class="metric">
+                <div class="metric-value" id="metricStreak">0</div>
+                <div class="metric-label">Longest streak</div>
+              </div>
+            </div>
+            <div class="panel-header">
+              <h2 class="panel-title">Recent commits</h2>
+              <span class="panel-subtitle" id="recentCommitSubtitle">Newest first</span>
+            </div>
+            <ul class="commit-list" id="commitList"></ul>
+          </section>
+
+          <aside class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">Most active repositories</h2>
+              <span class="panel-subtitle">In loaded commits</span>
+            </div>
+            <ul class="repo-list" id="repoList"></ul>
+          </aside>
+        </div>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <span>GitStock User V6 - Android live app with real lines, commits, and repository activity</span>
+      <span>Public GitHub data only. Not affiliated with GitHub or GitStock.</span>
+    </footer>
+  </div>
+
+  <div class="loading-overlay" id="loadingOverlay" role="dialog" aria-modal="true" aria-labelledby="loadingTitle">
+    <div class="loading-card">
+      <div class="loader-chart" aria-hidden="true">
+        <div class="loader-candle"></div>
+        <div class="loader-candle"></div>
+        <div class="loader-candle"></div>
+        <div class="loader-candle"></div>
+        <div class="loader-candle"></div>
+      </div>
+      <div class="loading-title" id="loadingTitle">Reading GitHub activity</div>
+      <div class="loading-message" id="loadingMessage">Loading profile...</div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+  </div>
+
+  <div class="dialog-backdrop" id="settingsDialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <section class="dialog">
+      <div class="dialog-header">
+        <h2 class="dialog-title" id="settingsTitle">Settings</h2>
+        <button class="icon-button" id="closeSettingsButton" type="button" aria-label="Close settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="dialog-body">
+        <div class="field-group">
+          <label class="field-label" for="commitLimitSelect">Maximum commits to load</label>
+          <select class="select-input" id="commitLimitSelect">
+            <option value="100">100 commits</option>
+            <option value="300">300 commits</option>
+            <option value="500">500 commits</option>
+            <option value="1000" selected>1,000 commits - GitHub search maximum</option>
+          </select>
+          <div class="field-help">Higher limits take more GitHub API requests. The app loads matching public commits across all repositories, not just repositories owned by the user.</div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="tokenInput">Optional GitHub token</label>
+          <div class="token-row">
+            <input class="text-input" id="tokenInput" type="password" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
+            <button class="secondary-button" id="clearTokenButton" type="button">Clear</button>
+          </div>
+          <div class="field-help">A token raises GitHub's request limit. It stays only in this browser tab and is sent only to api.github.com. It is never added to copied charts or exported files.</div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="chartThemeSelect">Chart theme</label>
+          <select class="select-input" id="chartThemeSelect">
+            <option value="dark" selected>Dark market chart</option>
+            <option value="paper">Paper market chart</option>
+          </select>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="secondary-button" id="cancelSettingsButton" type="button">Cancel</button>
+        <button class="primary-button" id="saveSettingsButton" type="button">Save settings</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
+
+  <script>
+    "use strict";
+
+    const API_ROOT = "https://api.github.com";
+
+    function safeSessionGet(key) {
+      try {
+        return sessionStorage.getItem(key) || "";
+      } catch (error) {
+        return "";
+      }
+    }
+
+    function safeSessionSet(key, value) {
+      try {
+        sessionStorage.setItem(key, value);
+      } catch (error) {
+        // Some file URL and privacy modes do not expose sessionStorage.
+      }
+    }
+
+    function safeReplaceState(url) {
+      try {
+        history.replaceState(null, "", url);
+      } catch (error) {
+        // Some local file and embedded browser contexts block History API writes.
+      }
+    }
+
+    const state = {
+      profile: null,
+      commits: [],
+      totalCount: 0,
+      incompleteResults: false,
+      fetchedLimit: 1000,
+      currentUsername: "",
+      range: "1Y",
+      chartMode: "lines",
+      buckets: [],
+      animationProgress: 1,
+      animationFrame: 0,
+      animationStart: 0,
+      isAnimating: false,
+      hoverIndex: -1,
+      chartTheme: "dark",
+      token: safeSessionGet("gitstockUserToken"),
+      requestController: null,
+      statsController: null,
+      statsEpoch: 0,
+      statsLoading: false,
+      statsLoadedThisSession: 0,
+      statsProgressDone: 0,
+      statsProgressTotal: 0,
+      statsMessage: "",
+      partialReason: "",
+      transportNotice: ""
+    };
+
+    const els = {
+      homeView: document.getElementById("homeView"),
+      resultView: document.getElementById("resultView"),
+      brandButton: document.getElementById("brandButton"),
+      backHomeButton: document.getElementById("backHomeButton"),
+      settingsButton: document.getElementById("settingsButton"),
+      usernameForm: document.getElementById("usernameForm"),
+      usernameInput: document.getElementById("usernameInput"),
+      exampleChips: document.getElementById("exampleChips"),
+      profileAvatar: document.getElementById("profileAvatar"),
+      profileTitle: document.getElementById("profileTitle"),
+      profileMeta: document.getElementById("profileMeta"),
+      profileDescription: document.getElementById("profileDescription"),
+      openGitHubLink: document.getElementById("openGitHubLink"),
+      refreshButton: document.getElementById("refreshButton"),
+      animationSpeed: document.getElementById("animationSpeed"),
+      playButton: document.getElementById("playButton"),
+      videoButton: document.getElementById("videoButton"),
+      copyHtmlButton: document.getElementById("copyHtmlButton"),
+      copyMarkdownButton: document.getElementById("copyMarkdownButton"),
+      copyImageButton: document.getElementById("copyImageButton"),
+      copyImageUrlButton: document.getElementById("copyImageUrlButton"),
+      modeGroup: document.getElementById("modeGroup"),
+      modeExplanation: document.getElementById("modeExplanation"),
+      lineStatsButton: document.getElementById("lineStatsButton"),
+      rangeGroup: document.getElementById("rangeGroup"),
+      chartCard: document.getElementById("chartCard"),
+      canvas: document.getElementById("chartCanvas"),
+      chartTooltip: document.getElementById("chartTooltip"),
+      chartCaptionTitle: document.getElementById("chartCaptionTitle"),
+      chartLegend: document.getElementById("chartLegend"),
+      chartWatermark: document.getElementById("chartWatermark"),
+      statusSummary: document.getElementById("statusSummary"),
+      statusNotice: document.getElementById("statusNotice"),
+      metricCommits: document.getElementById("metricCommits"),
+      metricRepos: document.getElementById("metricRepos"),
+      metricAdditions: document.getElementById("metricAdditions"),
+      metricDeletions: document.getElementById("metricDeletions"),
+      metricAdditionsLabel: document.getElementById("metricAdditionsLabel"),
+      metricDeletionsLabel: document.getElementById("metricDeletionsLabel"),
+      metricActiveDays: document.getElementById("metricActiveDays"),
+      metricStreak: document.getElementById("metricStreak"),
+      recentCommitSubtitle: document.getElementById("recentCommitSubtitle"),
+      commitList: document.getElementById("commitList"),
+      repoList: document.getElementById("repoList"),
+      loadingOverlay: document.getElementById("loadingOverlay"),
+      loadingMessage: document.getElementById("loadingMessage"),
+      progressFill: document.getElementById("progressFill"),
+      settingsDialog: document.getElementById("settingsDialog"),
+      closeSettingsButton: document.getElementById("closeSettingsButton"),
+      cancelSettingsButton: document.getElementById("cancelSettingsButton"),
+      saveSettingsButton: document.getElementById("saveSettingsButton"),
+      clearTokenButton: document.getElementById("clearTokenButton"),
+      tokenInput: document.getElementById("tokenInput"),
+      commitLimitSelect: document.getElementById("commitLimitSelect"),
+      chartThemeSelect: document.getElementById("chartThemeSelect"),
+      toastStack: document.getElementById("toastStack")
+    };
+
+    const ctx = els.canvas.getContext("2d", { alpha: false });
+
+    function normalizeUsername(value) {
+      let username = String(value || "").trim();
+      username = username.replace(/^https?:\/\/(www\.)?github\.com\//i, "");
+      username = username.split(/[\/?#]/)[0];
+      return username.trim();
+    }
+
+    function isValidUsername(username) {
+      return /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/.test(username);
+    }
+
+    function apiHeaders(includeToken = true) {
+      const headers = {};
+      if (includeToken && state.token) {
+        headers.Accept = "application/vnd.github+json";
+        headers.Authorization = `Bearer ${state.token}`;
+      }
+      return headers;
+    }
+
+    function isLocalDocument() {
+      return location.origin === "null" || !/^https?:$/.test(location.protocol);
+    }
+
+    function makeGitHubError(body, status, meta = {}) {
+      const error = new Error(body && body.message ? body.message : `GitHub returned ${status}`);
+      error.status = Number(status || 0);
+      error.body = body;
+      error.rateRemaining = meta["x-ratelimit-remaining"] || meta["X-RateLimit-Remaining"] || null;
+      error.rateReset = meta["x-ratelimit-reset"] || meta["X-RateLimit-Reset"] || null;
+      error.retryAfter = meta["retry-after"] || meta["Retry-After"] || null;
+      return error;
+    }
+
+    async function parseApiResponse(response) {
+      let body = null;
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json") || contentType.includes("application/problem+json")) {
+        body = await response.json();
+      } else {
+        const text = await response.text();
+        try {
+          body = text ? JSON.parse(text) : null;
+        } catch (error) {
+          body = text;
+        }
+      }
+
+      if (!response.ok) {
+        throw makeGitHubError(body, response.status, {
+          "x-ratelimit-remaining": response.headers.get("x-ratelimit-remaining"),
+          "x-ratelimit-reset": response.headers.get("x-ratelimit-reset"),
+          "retry-after": response.headers.get("retry-after")
+        });
+      }
+
+      return { body, response };
+    }
+
+    async function apiFetchCors(path, options = {}, includeToken = true) {
+      const method = String(options.method || "GET").toUpperCase();
+      const suppliedHeaders = { ...(options.headers || {}) };
+      if (!includeToken) {
+        delete suppliedHeaders.Authorization;
+        delete suppliedHeaders.authorization;
+      }
+      const headers = {
+        ...apiHeaders(includeToken),
+        ...suppliedHeaders
+      };
+      const requestOptions = {
+        ...options,
+        method,
+        mode: "cors",
+        credentials: "omit",
+        cache: "no-store",
+        signal: options.signal || (state.requestController ? state.requestController.signal : undefined)
+      };
+      if (Object.keys(headers).length) {
+        requestOptions.headers = headers;
+      } else {
+        delete requestOptions.headers;
+      }
+      const response = await fetch(`${API_ROOT}${path}`, requestOptions);
+      return parseApiResponse(response);
+    }
+
+    function apiFetchXhr(path, options = {}, includeToken = false) {
+      return new Promise((resolve, reject) => {
+        const method = String(options.method || "GET").toUpperCase();
+        if (method !== "GET") {
+          const error = new Error("XHR compatibility mode only supports GET requests.");
+          error.transport = "xhr";
+          reject(error);
+          return;
+        }
+
+        const xhr = new XMLHttpRequest();
+        const signal = options.signal || (state.requestController ? state.requestController.signal : null);
+        let settled = false;
+
+        const cleanup = () => {
+          if (signal) signal.removeEventListener("abort", onAbort);
+        };
+        const fail = error => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          reject(error);
+        };
+        const onAbort = () => {
+          try { xhr.abort(); } catch (error) { /* no-op */ }
+          fail(new DOMException("The request was aborted.", "AbortError"));
+        };
+
+        xhr.open("GET", `${API_ROOT}${path}`, true);
+        xhr.responseType = "text";
+        xhr.timeout = 20000;
+        xhr.withCredentials = false;
+        if (includeToken && state.token) {
+          xhr.setRequestHeader("Accept", "application/vnd.github+json");
+          xhr.setRequestHeader("Authorization", `Bearer ${state.token}`);
+        }
+
+        xhr.onload = () => {
+          if (s
