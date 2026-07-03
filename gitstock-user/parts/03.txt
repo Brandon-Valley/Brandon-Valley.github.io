@@ -1,0 +1,435 @@
+ettled) return;
+          settled = true;
+          cleanup();
+          let body = null;
+          try {
+            body = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+          } catch (error) {
+            body = xhr.responseText;
+          }
+          if (xhr.status < 200 || xhr.status >= 300) {
+            reject(makeGitHubError(body, xhr.status, {
+              "x-ratelimit-remaining": xhr.getResponseHeader("x-ratelimit-remaining"),
+              "x-ratelimit-reset": xhr.getResponseHeader("x-ratelimit-reset"),
+              "retry-after": xhr.getResponseHeader("retry-after")
+            }));
+            return;
+          }
+          state.transportNotice = "Loaded through the Android/local-file compatibility request path.";
+          resolve({
+            body,
+            response: {
+              ok: true,
+              status: xhr.status,
+              headers: { get: name => xhr.getResponseHeader(name) }
+            }
+          });
+        };
+        xhr.onerror = () => {
+          const error = new Error("The browser blocked the GitHub XHR request.");
+          error.transport = "xhr";
+          fail(error);
+        };
+        xhr.ontimeout = () => {
+          const error = new Error("The GitHub XHR request timed out.");
+          error.transport = "xhr";
+          fail(error);
+        };
+        xhr.onabort = () => {
+          if (!settled) fail(new DOMException("The request was aborted.", "AbortError"));
+        };
+
+        if (signal) {
+          if (signal.aborted) {
+            onAbort();
+            return;
+          }
+          signal.addEventListener("abort", onAbort, { once: true });
+        }
+        xhr.send();
+      });
+    }
+
+    function apiFetchJsonp(path, options = {}) {
+      return new Promise((resolve, reject) => {
+        if (String(options.method || "GET").toUpperCase() !== "GET") {
+          reject(new Error("JSONP compatibility mode only supports GET requests."));
+          return;
+        }
+
+        const callbackName = `__gitstock_jsonp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const separator = path.includes("?") ? "&" : "?";
+        const script = document.createElement("script");
+        let settled = false;
+        let timeoutId = 0;
+        const signal = options.signal || (state.requestController ? state.requestController.signal : null);
+
+        const cleanup = () => {
+          clearTimeout(timeoutId);
+          if (signal) signal.removeEventListener("abort", onAbort);
+          script.remove();
+          try {
+            delete window[callbackName];
+          } catch (error) {
+            window[callbackName] = undefined;
+          }
+        };
+
+        const finishReject = error => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          reject(error);
+        };
+
+        const onAbort = () => finishReject(new DOMException("The request was aborted.", "AbortError"));
+
+        window[callbackName] = payload => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          const meta = payload && payload.meta ? payload.meta : {};
+          const status = Number(meta.status || 200);
+          const body = payload ? payload.data : null;
+          if (status < 200 || status >= 300) {
+            reject(makeGitHubError(body, status, meta));
+            return;
+          }
+          state.transportNotice = "Loaded through the final local-file script compatibility path.";
+          resolve({
+            body,
+            response: {
+              ok: true,
+              status,
+              headers: {
+                get(name) {
+                  return meta[String(name || "").toLowerCase()] || null;
+                }
+              }
+            }
+          });
+        };
+
+        script.async = true;
+        script.src = `${API_ROOT}${path}${separator}callback=${encodeURIComponent(callbackName)}&_=${Date.now()}`;
+        script.onerror = () => {
+          const error = new Error("GitHub compatibility request could not be loaded.");
+          error.transport = "jsonp";
+          finishReject(error);
+        };
+
+        if (signal) {
+          if (signal.aborted) {
+            onAbort();
+            return;
+          }
+          signal.addEventListener("abort", onAbort, { once: true });
+        }
+
+        timeoutId = window.setTimeout(() => {
+          const error = new Error("GitHub compatibility request timed out.");
+          error.transport = "jsonp";
+          finishReject(error);
+        }, 20000);
+
+        document.head.appendChild(script);
+      });
+    }
+
+    async function apiFetch(path, options = {}) {
+      const method = String(options.method || "GET").toUpperCase();
+      let firstError = null;
+
+      // Always try a normal CORS request first, including for file:// and
+      // content:// pages. GitHub's public API supports browser CORS, and this
+      // is the path that works best in Chrome on Android. Anonymous GETs send
+      // no custom headers, so they stay simple requests and avoid preflights.
+      try {
+        return await apiFetchCors(path, options, true);
+      } catch (error) {
+        if (error.name === "AbortError") throw error;
+        if (!(error instanceof TypeError)) throw error;
+        firstError = error;
+      }
+
+      if (method !== "GET") throw firstError;
+
+      // A saved token can cause a preflight in restrictive local-file viewers.
+      // Retry the same public GET anonymously before using compatibility modes.
+      if (state.token) {
+        try {
+          const result = await apiFetchCors(path, options, false);
+          state.transportNotice = "The local viewer blocked the token request, so public data loaded anonymously.";
+          return result;
+        } catch (error) {
+          if (error.name === "AbortError") throw error;
+          if (!(error instanceof TypeError)) throw error;
+        }
+      }
+
+      try {
+        return await apiFetchXhr(path, options, false);
+      } catch (error) {
+        if (error.name === "AbortError") throw error;
+      }
+
+      try {
+        return await apiFetchJsonp(path, options);
+      } catch (error) {
+        if (error.name === "AbortError") throw error;
+        const finalError = new Error("GitHub could not be reached from this local HTML viewer.");
+        finalError.transport = "all";
+        finalError.cause = error;
+        throw finalError;
+      }
+    }
+
+    function setLoading(visible, message = "", progress = 0) {
+      els.loadingOverlay.classList.toggle("visible", visible);
+      if (message) {
+        els.loadingMessage.textContent = message;
+      }
+      els.progressFill.style.width = `${Math.max(0, Math.min(100, progress))}%`;
+    }
+
+    function showToast(message, type = "normal", duration = 3000) {
+      const toast = document.createElement("div");
+      toast.className = `toast${type === "error" ? " error" : ""}`;
+      toast.textContent = message;
+      els.toastStack.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(8px)";
+        setTimeout(() => toast.remove(), 180);
+      }, duration);
+    }
+
+    function showHome() {
+      if (state.requestController) {
+        state.requestController.abort();
+      }
+      stopAnimation();
+      els.homeView.classList.add("active");
+      els.resultView.classList.remove("active");
+      els.backHomeButton.hidden = true;
+      els.chartTooltip.classList.remove("visible");
+      safeReplaceState(location.pathname + location.search);
+      requestAnimationFrame(() => els.usernameInput.focus());
+    }
+
+    function showResults() {
+      els.homeView.classList.remove("active");
+      els.resultView.classList.add("active");
+      els.backHomeButton.hidden = false;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      requestAnimationFrame(() => resizeAndRenderChart());
+    }
+
+    function setSettingsOpen(open) {
+      els.settingsDialog.classList.toggle("visible", open);
+      if (open) {
+        els.tokenInput.value = state.token;
+        els.commitLimitSelect.value = String(state.fetchedLimit);
+        els.chartThemeSelect.value = state.chartTheme;
+        requestAnimationFrame(() => els.commitLimitSelect.focus());
+      }
+    }
+
+    async function loadUser(username, options = {}) {
+      username = normalizeUsername(username);
+      if (!isValidUsername(username)) {
+        showToast("Enter a valid GitHub username.", "error");
+        return;
+      }
+
+      if (state.requestController) {
+        state.requestController.abort();
+      }
+      if (state.statsController) {
+        state.statsController.abort();
+      }
+      state.requestController = new AbortController();
+      state.statsController = null;
+      state.statsEpoch += 1;
+      state.statsLoading = false;
+      state.statsLoadedThisSession = 0;
+      state.statsProgressDone = 0;
+      state.statsProgressTotal = 0;
+      state.statsMessage = "";
+      state.partialReason = "";
+      state.transportNotice = "";
+      state.currentUsername = username;
+      els.usernameInput.value = username;
+      setLoading(true, `Loading @${username}...`, 4);
+
+      try {
+        const profileResult = await apiFetch(`/users/${encodeURIComponent(username)}`);
+        state.profile = profileResult.body;
+        setLoading(true, "Searching commits across all public repositories...", 10);
+
+        const commitResult = await fetchCommitSearch(username, state.fetchedLimit);
+        state.commits = commitResult.items;
+        hydrateLineStatsCache(username, state.commits);
+        state.totalCount = commitResult.totalCount;
+        state.incompleteResults = commitResult.incompleteResults;
+        state.partialReason = commitResult.partialReason;
+
+        if (!state.commits.length) {
+          setLoading(true, "No search results. Checking recent public push events...", 82);
+          const eventCommits = await fetchEventFallback(username);
+          if (eventCommits.length) {
+            state.commits = eventCommits;
+            hydrateLineStatsCache(username, state.commits);
+            state.totalCount = eventCommits.length;
+            state.partialReason = "GitHub commit search returned no results, so the chart uses recent public push events.";
+          }
+        }
+
+        state.range = options.preserveRange ? state.range : "1Y";
+        state.animationProgress = 1;
+        state.hoverIndex = -1;
+        updateRangeButtons();
+        setLoading(true, "Building the market chart...", 94);
+        buildDashboard();
+        showResults();
+        safeReplaceState(`#${encodeURIComponent(username)}`);
+        setLoading(false);
+        void ensureLineStats({ automatic: true });
+
+        if (!state.commits.length) {
+          showToast("No public commits were found for this user.", "error", 5000);
+        }
+      } catch (error) {
+        setLoading(false);
+        if (error.name === "AbortError") {
+          return;
+        }
+        handleLoadError(error, username);
+      } finally {
+        state.requestController = null;
+      }
+    }
+
+    async function fetchCommitSearch(username, limit) {
+      const items = [];
+      const maxPages = Math.min(10, Math.ceil(limit / 100));
+      let totalCount = 0;
+      let incompleteResults = false;
+      let partialReason = "";
+
+      for (let page = 1; page <= maxPages; page += 1) {
+        const perPage = Math.min(100, limit - items.length);
+        const query = encodeURIComponent(`author:${username}`);
+        const path = `/search/commits?q=${query}&sort=committer-date&order=desc&per_page=${perPage}&page=${page}`;
+        const progress = 10 + Math.round((page - 1) / maxPages * 70);
+        setLoading(true, `Loading commit page ${page} of up to ${maxPages}...`, progress);
+
+        try {
+          const result = await apiFetch(path);
+          const data = result.body;
+          if (page === 1) {
+            totalCount = Number(data.total_count || 0);
+            incompleteResults = Boolean(data.incomplete_results);
+          }
+          const rawPageItems = Array.isArray(data.items) ? data.items : [];
+          const pageItems = rawPageItems.filter(item => !item.repository || item.repository.private !== true);
+          items.push(...pageItems);
+          if (rawPageItems.length < perPage || items.length >= Math.min(totalCount, limit, 1000)) {
+            break;
+          }
+          await wait(350);
+        } catch (error) {
+          if (items.length && (error.status === 403 || error.status === 429)) {
+            partialReason = "GitHub stopped the search because of an API rate limit. The chart uses the commits loaded before the limit was reached.";
+            break;
+          }
+          throw error;
+        }
+      }
+
+      return {
+        items: dedupeCommits(items).slice(0, limit),
+        totalCount,
+        incompleteResults,
+        partialReason
+      };
+    }
+
+    async function fetchEventFallback(username) {
+      const commits = [];
+      for (let page = 1; page <= 3; page += 1) {
+        try {
+          const result = await apiFetch(`/users/${encodeURIComponent(username)}/events/public?per_page=100&page=${page}`);
+          const events = Array.isArray(result.body) ? result.body : [];
+          if (!events.length) {
+            break;
+          }
+          for (const event of events) {
+            if (event.type !== "PushEvent" || !event.payload || !Array.isArray(event.payload.commits)) {
+              continue;
+            }
+            for (const commit of event.payload.commits) {
+              commits.push({
+                sha: commit.sha,
+                html_url: `https://github.com/${event.repo.name}/commit/${commit.sha}`,
+                repository: {
+                  full_name: event.repo.name,
+                  html_url: `https://github.com/${event.repo.name}`
+                },
+                commit: {
+                  message: commit.message || "Commit",
+                  author: {
+                    name: commit.author && commit.author.name ? commit.author.name : username,
+                    email: commit.author && commit.author.email ? commit.author.email : "",
+                    date: event.created_at
+                  },
+                  committer: {
+                    date: event.created_at
+                  }
+                }
+              });
+            }
+          }
+        } catch (error) {
+          if (page === 1) {
+            throw error;
+          }
+          break;
+        }
+      }
+      return dedupeCommits(commits)
+        .sort((a, b) => getCommitDate(b) - getCommitDate(a))
+        .slice(0, state.fetchedLimit);
+    }
+
+    function dedupeCommits(commits) {
+      const seen = new Set();
+      const unique = [];
+      for (const commit of commits) {
+        const repo = commit.repository && commit.repository.full_name ? commit.repository.full_name : "unknown";
+        const key = `${repo}:${commit.sha}`;
+        if (seen.has(key)) {
+          continue;
+        }
+        seen.add(key);
+        unique.push(commit);
+      }
+      return unique;
+    }
+
+    function handleLoadError(error, username) {
+      if (window.GITSTOCK_IS_LOCAL_PAGE && window.GITSTOCK_LAUNCH_TARGET) {
+        window.location.href = window.GITSTOCK_LAUNCH_TARGET;
+        return;
+      }
+      let message = error.message || "The GitHub request failed.";
+      if (error.status === 404) {
+        message = `GitHub user @${username} was not found.`;
+      } else if (error.status === 401) {
+        message = "The saved GitHub token is invalid. Open Settings and clear or replace it.";
+      } else if (error.status === 403 || error.status === 429) {
+        message = "GitHub's API rate limit was reached. Add a token in Settings or try again after the limit resets.";
+      } else if (error.transport === "all" || error.transport === "jsonp" || error.transport === "xhr") {
+        message = "This local Android page cannot read GitHub directly. Opening the secure live GitStock app instead.";
+      } else if (error instanceof TypeError) {
+        m
