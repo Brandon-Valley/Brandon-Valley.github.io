@@ -1,0 +1,4 @@
+nvas.addEventListener("touchend",()=>setTimeout(()=>E.tip.classList.remove("show"),1200));addEventListener("resize",resize);const initial=decodeURIComponent(location.hash.slice(1));if(initial)loadUser(initial);else E.user.focus();
+</script>
+</body>
+</html>
