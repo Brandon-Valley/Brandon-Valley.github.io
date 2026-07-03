@@ -1,0 +1,1 @@
+load later if the public API limit is reached.");E.canvas.addEventListener("mousemove",showTip);E.canvas.addEventListener("touchstart",showTip,{passive:true});E.canvas.addEventListener("touchmove",showTip,{passive:true});E.canvas.addEventListener("mouseleave",()=>E.tip.classList.remove("show"));E.ca

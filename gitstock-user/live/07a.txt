@@ -1,0 +1,1 @@
+()}};$("modes").onclick=e=>{const b=e.target.closest("[data-mode]");if(b){S.mode=b.dataset.mode;render()}};E.stats.onclick=loadStats;$("refresh").onclick=()=>loadUser(S.user);$("back").onclick=goHome;$("brand").onclick=goHome;$("gear").onclick=()=>toast("This live version uses GitHub public data. Re
