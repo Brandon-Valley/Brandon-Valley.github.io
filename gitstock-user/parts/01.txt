@@ -1,0 +1,463 @@
+   }
+
+    .toast.error {
+      background: #8e302d;
+    }
+
+    @keyframes toast-in {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .empty-state {
+      padding: 36px 20px;
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 900px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .metrics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .metric:nth-child(2n) {
+        border-right: 0;
+      }
+
+      .metric:nth-child(-n + 4) {
+        border-bottom: 1px solid rgba(20, 20, 20, 0.10);
+      }
+    }
+
+    @media (max-width: 700px) {
+      .site-header {
+        width: min(100% - 24px, 1180px);
+        min-height: 62px;
+      }
+
+      .hero {
+        width: min(100% - 24px, 960px);
+        padding: 54px 0 44px;
+      }
+
+      .hero h1 {
+        font-size: clamp(40px, 14vw, 66px);
+      }
+
+      .search-panel {
+        grid-template-columns: 1fr;
+        border-radius: 18px;
+      }
+
+      .search-panel .primary-button {
+        width: 100%;
+      }
+
+      .site-footer {
+        width: min(100% - 24px, 1180px);
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .result-main {
+        width: min(100% - 24px, 1180px);
+        padding-top: 22px;
+      }
+
+      .profile-row {
+        flex-direction: column;
+      }
+
+      .result-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .chart-card {
+        border-radius: 16px;
+        min-height: 460px;
+      }
+
+      #chartCanvas {
+        height: 460px;
+      }
+
+      .chart-caption {
+        left: 13px;
+        right: 13px;
+        top: 13px;
+        gap: 8px;
+      }
+
+      .chart-watermark {
+        display: none;
+      }
+
+      .chart-legend {
+        gap: 7px;
+      }
+
+      .chart-tooltip {
+        min-width: 0;
+        max-width: none;
+        width: calc(100% - 16px);
+        max-height: calc(100% - 16px);
+      }
+
+      .status-strip {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 5px;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .chart-mode-title-row {
+        align-items: flex-start;
+      }
+
+      .real-metrics-note {
+        font-size: 9px;
+      }
+
+      .primary-chart-controls {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .mode-group {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .mode-button {
+        width: 100%;
+        padding: 0 7px;
+        font-size: 12px;
+      }
+
+      .range-group {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .range-button {
+        width: 100%;
+      }
+
+      .line-stats-button {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 440px) {
+      .header-text-action {
+        display: none;
+      }
+
+      .profile-identity {
+        align-items: flex-start;
+      }
+
+      .avatar {
+        width: 54px;
+        height: 54px;
+      }
+
+      .metrics-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .metric {
+        padding: 15px 14px;
+      }
+
+      .token-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+
+
+    .local-launch-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100000;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 20% 5%, rgba(255, 255, 255, 0.92), transparent 32rem),
+        linear-gradient(180deg, #f4f0e8 0%, #eee8de 100%);
+    }
+
+    .local-launch-overlay[hidden] {
+      display: none;
+    }
+
+    .local-launch-card {
+      width: min(520px, 100%);
+      border: 1px solid rgba(20, 20, 20, 0.16);
+      border-radius: 28px;
+      padding: 28px;
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: 0 24px 80px rgba(37, 31, 24, 0.16);
+      text-align: center;
+    }
+
+    .local-launch-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+    }
+
+    .local-launch-card h1 {
+      margin: 0;
+      font-size: clamp(34px, 10vw, 58px);
+      line-height: 0.95;
+      letter-spacing: -0.065em;
+    }
+
+    .local-launch-card p {
+      margin: 20px auto 0;
+      max-width: 420px;
+      color: #6d6a63;
+      font-size: 18px;
+      line-height: 1.5;
+    }
+
+    .local-launch-button {
+      width: 100%;
+      min-height: 58px;
+      margin-top: 26px;
+      border: 0;
+      border-radius: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #141414;
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: 850;
+      text-decoration: none;
+      box-shadow: 0 12px 30px rgba(20, 20, 20, 0.18);
+    }
+
+    .local-launch-note {
+      margin-top: 14px !important;
+      font-size: 13px !important;
+      line-height: 1.4 !important;
+    }
+
+  </style>
+
+  <script>
+    (function () {
+      const liveBase = "https://brandon-valley.github.io/gitstock-user/";
+      const localPage = !/^https?:$/.test(window.location.protocol);
+      window.GITSTOCK_LIVE_BASE = liveBase;
+      window.GITSTOCK_IS_LOCAL_PAGE = localPage;
+      if (!localPage) return;
+
+      const hash = window.location.hash || "";
+      const target = liveBase + "?v=6" + hash;
+      window.GITSTOCK_LAUNCH_TARGET = target;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        const overlay = document.getElementById("localLaunchOverlay");
+        const button = document.getElementById("localLaunchButton");
+        if (button) button.href = target;
+        if (overlay) overlay.hidden = false;
+      });
+
+      // A content:// page cannot reliably make GitHub API requests on Android.
+      // Top-level HTTPS navigation is reliable, so move immediately to the
+      // same single-file app hosted on the user's GitHub Pages site.
+      window.setTimeout(function () {
+        try {
+          window.location.replace(target);
+        } catch (error) {
+          // The visible launch button remains available as a user-gesture fallback.
+        }
+      }, 120);
+    }());
+  </script>
+</head>
+<body>
+
+  <div class="local-launch-overlay" id="localLaunchOverlay" hidden>
+    <section class="local-launch-card" aria-labelledby="localLaunchTitle">
+      <div class="local-launch-logo" aria-hidden="true">
+        <span>GitStock</span>
+        <span class="build-badge">V6</span>
+      </div>
+      <h1 id="localLaunchTitle">Opening the full app</h1>
+      <p>This downloaded file is moving to the secure web version so Android can reach GitHub and load live commit data.</p>
+      <a class="local-launch-button" id="localLaunchButton" href="https://brandon-valley.github.io/gitstock-user/?v=6">Open GitStock User</a>
+      <p class="local-launch-note">If Android does not move automatically, tap the button once.</p>
+    </section>
+  </div>
+
+  <div class="app-shell">
+    <header class="site-header">
+      <button class="brand" id="brandButton" type="button" aria-label="Go to GitStock home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="25" height="25" viewBox="0 0 25 25" fill="none">
+            <path d="M5 3.5V21.5M12.5 2V23M20 5V20" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.38"/>
+            <rect x="2.5" y="8" width="5" height="8" rx="1" fill="currentColor"/>
+            <rect x="10" y="5" width="5" height="12" rx="1" fill="#16a16f"/>
+            <rect x="17.5" y="10" width="5" height="7" rx="1" fill="#df5b55"/>
+          </svg>
+        </span>
+        <span>GitStock</span>
+        <span style="font-size:11px;color:var(--muted);font-weight:750;letter-spacing:0.04em">USER</span>
+        <span class="build-badge">V6</span>
+      </button>
+      <div class="header-actions">
+        <button class="quiet-button" id="backHomeButton" type="button" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="header-text-action">Back home</span>
+        </button>
+        <button class="icon-button" id="settingsButton" type="button" aria-label="Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 15.2A3.2 3.2 0 1 0 12 8.8A3.2 3.2 0 0 0 12 15.2Z" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M19.4 15A1.7 1.7 0 0 0 19.74 16.88L19.8 16.94A2 2 0 1 1 16.97 19.77L16.91 19.71A1.7 1.7 0 0 0 15.03 19.37A1.7 1.7 0 0 0 14 20.92V21A2 2 0 1 1 10 21V20.92A1.7 1.7 0 0 0 8.97 19.37A1.7 1.7 0 0 0 7.09 19.71L7.03 19.77A2 2 0 1 1 4.2 16.94L4.26 16.88A1.7 1.7 0 0 0 4.6 15A1.7 1.7 0 0 0 3.05 14H3A2 2 0 1 1 3 10H3.08A1.7 1.7 0 0 0 4.63 8.97A1.7 1.7 0 0 0 4.29 7.09L4.23 7.03A2 2 0 1 1 7.06 4.2L7.12 4.26A1.7 1.7 0 0 0 9 4.6H9.03A1.7 1.7 0 0 0 10.06 3.05V3A2 2 0 1 1 14.06 3V3.08A1.7 1.7 0 0 0 15.09 4.63A1.7 1.7 0 0 0 16.97 4.29L17.03 4.23A2 2 0 1 1 19.86 7.06L19.8 7.12A1.7 1.7 0 0 0 19.46 9V9.03A1.7 1.7 0 0 0 21.01 10.06H21.09A2 2 0 1 1 21.09 14.06H21.01A1.7 1.7 0 0 0 19.46 15.09L19.4 15Z" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="view home-view active" id="homeView">
+      <section class="hero">
+        <div class="eyebrow"><span class="signal-dot"></span>All public repositories, one chart</div>
+        <h1>GitHub commits rendered like a market chart.</h1>
+        <p class="hero-copy">Enter any GitHub username. GitStock User combines that person's public commits across every repository into one animated candlestick activity chart.</p>
+
+        <form class="search-panel" id="usernameForm">
+          <label class="username-field">
+            <span class="username-prefix">github.com/</span>
+            <input id="usernameInput" type="text" value="brandon-valley" placeholder="username" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="GitHub username">
+          </label>
+          <button class="primary-button" type="submit">
+            Generate chart
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12H19M14 7L19 12L14 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </form>
+
+        <div class="example-label">Try a public GitHub user</div>
+        <div class="example-chips" id="exampleChips">
+          <button class="chip" type="button" data-username="brandon-valley">brandon-valley</button>
+          <button class="chip" type="button" data-username="torvalds">torvalds</button>
+          <button class="chip" type="button" data-username="sindresorhus">sindresorhus</button>
+          <button class="chip" type="button" data-username="addyosmani">addyosmani</button>
+          <button class="chip" type="button" data-username="gaearon">gaearon</button>
+        </div>
+      </section>
+    </main>
+
+    <main class="view result-view" id="resultView">
+      <div class="result-main">
+        <section class="profile-row">
+          <div class="profile-identity">
+            <img class="avatar" id="profileAvatar" alt="">
+            <div class="profile-copy">
+              <h1 id="profileTitle">GitHub user</h1>
+              <div class="profile-meta" id="profileMeta"></div>
+              <div class="profile-description" id="profileDescription"></div>
+            </div>
+          </div>
+          <div class="result-actions">
+            <a class="secondary-button" id="openGitHubLink" href="#" target="_blank" rel="noopener noreferrer">
+              Open GitHub
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M14 5H19V10M19 5L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M19 14V18A1 1 0 0 1 18 19H6A1 1 0 0 1 5 18V6A1 1 0 0 1 6 5H10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
+            <button class="secondary-button" id="refreshButton" type="button">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M20 11A8 8 0 1 0 18.5 16M20 4V11H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Refresh
+            </button>
+          </div>
+        </section>
+
+        <section class="chart-mode-panel" aria-label="Real GitHub chart controls">
+          <div class="chart-mode-title-row">
+            <div>
+              <div class="control-kicker">What the graph shows</div>
+              <div class="mode-explanation" id="modeExplanation">Green bars are lines added. Red bars are lines removed. Tap a bar for commits and repository details.</div>
+            </div>
+            <div class="real-metrics-note">REAL METRICS V6</div>
+          </div>
+          <div class="primary-chart-controls" aria-label="Chart data controls">
+            <div class="mode-group" id="modeGroup" aria-label="Chart data mode">
+              <button class="mode-button active" type="button" data-mode="lines">Lines + / -</button>
+              <button class="mode-button" type="button" data-mode="commits">Commit count</button>
+              <button class="mode-button" type="button" data-mode="repos">Repositories</button>
+            </div>
+            <div class="range-group" id="rangeGroup" aria-label="Chart date range">
+              <button class="range-button" type="button" data-range="30D">30D</button>
+              <button class="range-button" type="button" data-range="90D">90D</button>
+              <button class="range-button active" type="button" data-range="1Y">1Y</button>
+              <button class="range-button" type="button" data-range="ALL">All</button>
+            </div>
+            <button class="tool-button line-stats-button" id="lineStatsButton" type="button">Load additions / removals</button>
+          </div>
+        </section>
+
+        <div class="toolbar-wrap secondary-toolbar-wrap">
+          <div class="toolbar" aria-label="Animation and export controls">
+            <select class="toolbar-select" id="animationSpeed" aria-label="Animation speed">
+              <option value="5000">Speed 5s</option>
+              <option value="10000" selected>Speed 10s</option>
+              <option value="20000">Speed 20s</option>
+            </select>
+            <button class="tool-button" id="playButton" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M8 5V19L19 12L8 5Z"/>
+              </svg>
+              Play animation
+            </button>
+            <button class="tool-button" id="videoButton" type="button">Download video</button>
+            <button class="tool-button" id="copyHtmlButton" type="button">Copy HTML</button>
+            <button class="tool-button" id="copyMarkdownButton" type="button">Copy MD</button>
+            <button class="tool-button" id="copyImageButton" type="button">Copy image</button>
+            <button class=
