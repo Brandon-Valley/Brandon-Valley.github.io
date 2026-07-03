@@ -1,0 +1,7 @@
+Date(c.commit?.committer?.date||c.commit?.author?.date||c.created_at||0),repoOf=c=>c.repository?.full_name||c.repo?.name||"unknown";
+function toast(msg,bad=false){const d=document.createElement("div");d.className="toast";d.style.background=bad?"#8e302d":"#17191b";d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),4300)}
+function busy(on,msg="",pct=0){E.loading.classList.toggle("show",on);E.loadmsg.textContent=msg;E.progress.style.width=Math.max(0,Math.min(100,pct))+"%"}
+function headers(){return {}}
+async function api(path){const r=await fetch(API+path,{headers:headers(),mode:"cors",credentials:"omit",cache:"no-store"});let b;try{b=await r.json()}catch(e){b={message:await r.text()}}if(!r.ok){const x=new Error(b.message||`GitHub returned ${r.status}`);x.status=r.status;throw x}return b}
+function normalize(v){return String(v||"").trim().replace(/^https?:\/\/(www\.)?github\.com\//i,"").split(/[\/?#]/)[0]}
+async function loadUser(raw){const u=normalize(raw);if(!/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/.test(u))return toast("Enter a valid GitHub username.",true);S.user=u;busy(true,`Loading @${u}...`,5);try{S.profile=await api(`/users/${encodeURIComponent(u)
